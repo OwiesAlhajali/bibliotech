@@ -1,3 +1,10 @@
 <resources>
     <string name="app_name">Bibliotech</string>
+    <string name="search_hint">Search by book title or author...</string>
+    <string name="no_results">No books found.</string>
+    <string name="error_loading">An error occurred, please check your connection.</string>
+    <string name="loading">Loading books...</string>
+        <string name="cover_description">Book cover for %1$s</string>
+        <string name="no_cover_description">No cover available</string>
+
 </resources>
