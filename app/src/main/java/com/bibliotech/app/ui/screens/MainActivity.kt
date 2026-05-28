@@ -1,4 +1,4 @@
-package com.bibliotech.app
+package com.bibliotech.app.ui.screens
 
 import android.os.Bundle
 import androidx.activity.ComponentActivity
