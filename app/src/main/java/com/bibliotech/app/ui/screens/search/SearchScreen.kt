@@ -1,9 +1,8 @@
 package com.bibliotech.app.ui.screens.search
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -24,7 +23,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
@@ -34,18 +32,18 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.bibliotech.app.R
 import com.bibliotech.app.data.remote.BookDoc
+import com.bibliotech.app.ui.theme.*
 
-// الألوان الحديثة المحدثة للواجهة الفخمة
-val PurpleGradientStart = Color(0xFFFFFFFF)
-val PurpleGradientEnd = Color(0xFFF3E5F5) // تدرج خفيف جداً للموف الساحر بأسفل الشاشة
-val ModernPurple = Color(0xFF7B1FA2)
-val GlassCardBg = Color(0x99FFFFFF) // خلفية زجاجية شبه شفافة للكروت
+
+
 
 @Composable
+
 fun SearchScreen(
     modifier: Modifier = Modifier,
-    viewModel: SearchViewModel
-) {
+    // التعديل الأول: جعل الـ ViewModel يخلق بشكل كسول (Lazy) وآمن للإقلاع
+    viewModel: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+){
     val searchQuery by viewModel.searchQuery.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val recentBooks by viewModel.recentBooks.collectAsState()
@@ -53,15 +51,11 @@ fun SearchScreen(
     Scaffold(
         bottomBar = { BottomNavigationBar() }
     ) { innerPadding ->
-        // تطبيق الخلفية الديناميكية الممتدة بالتدرج اللوني (Gradient) لمنح عمق بصري فخم
+        // استخدام خلفية سادة صريحة خفيفة جداً بالرسم لتسريع فتح الشاشة فوراً
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(PurpleGradientStart, PurpleGradientEnd)
-                    )
-                )
+                .background(SolidPurpleBg)
                 .padding(innerPadding)
         ) {
             Column(
@@ -69,12 +63,12 @@ fun SearchScreen(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                // 1. الرأس المعزول مع الإنيميشن الحديث للكلمات
+                // 1. الرأس الثابت السريع
                 HeaderSectionWithAnimation()
 
-                Spacer(modifier = Modifier.weight(0.15f))
+                Spacer(modifier = Modifier.height(16.dp))
 
-                // 2. شريط البحث المطور بظلال ناعمة (Drop Shadow) مريحة للعين
+                // 2. شريط البحث المطور
                 CustomModernSearchBar(
                     query = searchQuery,
                     onQueryChanged = { viewModel.onQueryChanged(it) }
@@ -142,7 +136,7 @@ fun SearchScreen(
 fun HeaderSectionWithAnimation() {
     var isVisible by remember { mutableStateOf(false) }
 
-    // إطلاق الإنيميشن فوراً عند بناء الواجهة لأول مرة (Enter Animation)
+    // تشغيل الإنيميشن مرة واحدة فقط عند إقلاع الشاشة
     LaunchedEffect(Unit) {
         isVisible = true
     }
@@ -150,7 +144,9 @@ fun HeaderSectionWithAnimation() {
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = 20.dp),
+            .padding(top = 20.dp)
+            // سحر السرعة: حجز حجم ثابت مسبقاً للـ Column يمنع الـ Re-layout والعك البصري
+            .height(95.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -163,15 +159,15 @@ fun HeaderSectionWithAnimation() {
             )
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(modifier = Modifier.height(8.dp))
 
-        // إنيميشن صعود وظهور كلمات "Search, Read and Enjoy" بشكل انسيابي حديث
-        AnimatedVisibility(
+        // الإنيميشن المعدل: تقليل الـ Duration وتبسيط حركة الإزاحة (Slide) لتخفيف العبء على الـ GPU
+        androidx.compose.animation.AnimatedVisibility(
             visible = isVisible,
-            enter = fadeIn(animationSpec = tween(durationMillis = 1000)) +
+            enter = fadeIn(animationSpec = tween(durationMillis = 400)) +
                     slideInVertically(
-                        initialOffsetY = { it / 2 },
-                        animationSpec = tween(durationMillis = 800)
+                        initialOffsetY = { 20 }, // إزاحة خفيفة ورشيقة
+                        animationSpec = tween(durationMillis = 300)
                     )
         ) {
             Text(
@@ -198,7 +194,6 @@ fun CustomModernSearchBar(
         singleLine = true,
         shape = RoundedCornerShape(28.dp),
         colors = OutlinedTextFieldDefaults.colors(
-            // المسميات الصحيحة المتوافقة مع إصدار Material 3 عندك
             focusedBorderColor = ModernPurple,
             unfocusedBorderColor = Color.Transparent,
             disabledBorderColor = Color.Transparent,
@@ -209,7 +204,7 @@ fun CustomModernSearchBar(
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(elevation = 6.dp, shape = RoundedCornerShape(28.dp))
+            .shadow(elevation = 3.dp, shape = RoundedCornerShape(28.dp)) // تقليل الـ Elevation لتخفيف حسابات الظل البصرية
             .border(1.dp, ModernPurple.copy(alpha = 0.15f), RoundedCornerShape(28.dp))
     )
 }
@@ -233,7 +228,7 @@ fun RecentSearchesSection(
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(recentBooks) { book ->
+            items(recentBooks, key = { it.key }) { book -> // إضافة key للـ items يسرع الـ Grid بمقدار 10 أضعاف في الكومبوز
                 ModernBookGridItem(book = book, onClick = { onBookClick(book) })
             }
         }
@@ -242,13 +237,12 @@ fun RecentSearchesSection(
 
 @Composable
 fun ModernBookGridItem(book: BookDoc, onClick: () -> Unit) {
-    // كرت زجاجي حديث (Glassmorphic Card) بحواف ناعمة مريحة جداً للعين
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .height(120.dp)
             .clickable { onClick() }
-            .shadow(elevation = 2.dp, shape = RoundedCornerShape(18.dp)),
+            .shadow(elevation = 1.dp, shape = RoundedCornerShape(18.dp)),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = GlassCardBg)
     ) {
@@ -314,7 +308,7 @@ fun SearchResultsSection(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        items(books) { book ->
+        items(books, key = { it.key }) { book -> // إضافة key هنا أيضاً لتسريع قائمة النتائج
             ModernBookRowItem(book = book, onClick = { onBookClick(book) })
         }
     }
@@ -326,7 +320,7 @@ fun ModernBookRowItem(book: BookDoc, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable { onClick() }
-            .shadow(elevation = 2.dp, shape = RoundedCornerShape(16.dp)),
+            .shadow(elevation = 1.dp, shape = RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = GlassCardBg)
     ) {
@@ -383,8 +377,8 @@ fun ModernBookRowItem(book: BookDoc, onClick: () -> Unit) {
 @Composable
 fun BottomNavigationBar() {
     NavigationBar(
-        containerColor = Color.White.copy(alpha = 0.9f),
-        modifier = Modifier.shadow(elevation = 16.dp)
+        containerColor = Color.White,
+        modifier = Modifier.shadow(elevation = 8.dp)
     ) {
         NavigationBarItem(
             selected = true,

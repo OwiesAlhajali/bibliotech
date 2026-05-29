@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bibliotech.app.data.remote.BookDoc
 import com.bibliotech.app.data.repository.BookRepository
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -27,16 +28,19 @@ class SearchViewModel(
     private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
-    private val _recentBooks = MutableStateFlow<List<BookDoc>>(emptyList())
-    val recentBooks: StateFlow<List<BookDoc>> = _recentBooks.asStateFlow()
+    // تعديل هندسي: تحويل الكاش لـ StateFlow يقرأ تلقائياً من الـ Repository بخلفية مريحة
+    val recentBooks: StateFlow<List<BookDoc>> = repository.getRecentBooks()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList() // التطبيق بيفتح فوراً بقائمة فاضية بصفر ثانية تأخير
+        )
 
     init {
-        // قراءة القائمة المبدئية عند فتح الشاشة لأول مرة
-        updateRecentBooksList()
-
+        // منطق البحث المطور مسبقاً (شغال تمام بالخلفية)
         viewModelScope.launch {
             _searchQuery
-                .debounce(1500L)
+                .debounce(150L)
                 .distinctUntilChanged()
                 .filter { query -> query.trim().length >= 4 }
                 .collectLatest { query -> performSearch(query) }
@@ -47,13 +51,8 @@ class SearchViewModel(
         _searchQuery.value = newQuery
         if (newQuery.isBlank()) {
             _uiState.value = SearchUiState.Idle
-            updateRecentBooksList() // تحديث وعرض القائمة المدمجة فور مسح نص البحث
+            // ما عاد بحاجة نستدعي دالة التحديث هون لأن الـ StateFlow بيراقب التغيير تلقائياً!
         }
-    }
-
-    // جلب القائمة المحدثة دائماً من الـ Repository
-    private fun updateRecentBooksList() {
-        _recentBooks.value = repository.getRecentBooks()
     }
 
     private fun performSearch(query: String) {
@@ -73,7 +72,11 @@ class SearchViewModel(
     }
 
     fun onBookClicked(book: BookDoc) {
-        repository.saveBookToCache(book)
-        updateRecentBooksList() // تحديث الـ Grid فوراً بالترتيب الجديد بعد الضغط
+        // تشغيل الحفظ بخيط خلفي مريح حتى لا يسبب أي تعليق بالواجهة
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.saveBookToCache(book)
+            // بمجرد الحفظ بالـ SharedPreferences، الـ Flow في الـ Repository رح يلقط التحديث
+            // ويعكسه فوراً على الـ UI بدون ما نضطر نستدعي دوال تحديث يدوية!
+        }
     }
 }

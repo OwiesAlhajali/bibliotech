@@ -11,3 +11,6 @@ val PurpleGrey40 = Color(0xFF625b71)
 val Pink40 = Color(0xFF7D5260)
 val PlaceholderBg = Color(0xFFEEECEC)
 val PlaceholderIconTint = Color(0xFF9E9E9E)
+val SolidPurpleBg = Color(0xFFFAF7FC) // خلفية موف ناعمة وسادة خفيفة على الـ Rendering
+val ModernPurple = Color(0xFF7B1FA2) // اللون البنفسجي العصري للهوية
+val GlassCardBg = Color(0xFFFFFFFF)
