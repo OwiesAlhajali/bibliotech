@@ -12,27 +12,30 @@ import com.bibliotech.app.ui.screens.search.SearchScreen
 import com.bibliotech.app.ui.screens.search.SearchViewModel
 import com.bibliotech.app.ui.theme.BibliotechTheme
 import androidx.compose.foundation.layout.padding
+import com.bibliotech.app.navigation.AppNavigation
+import com.bibliotech.app.data.local.AppDatabase
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. إنشاء الـ API Service
+        // 1. إنشاء الـ API Service (شغال تمام عندك)
         val apiService = RetrofitInstance.api
 
-        // 2. إنشاء الـ Repository وتمرير الـ API له
-        val repository = BookRepository(apiService, applicationContext)
+        // 2. بناء قاعدة البيانات وجلب الـ Dao (هاد السطرين الجداد)
+        val database = AppDatabase.getDatabase(this)
+        val bookDao = database.bookDao()
 
-        // 3. إنشاء الـ ViewModel وتمرير الـ Repository له
+        // 3. إنشاء الـ Repository وتمرير الـ bookDao له بدل الـ context
+        val repository = BookRepository(apiService, bookDao)
+
+        // 4. إنشاء الـ ViewModel وتمرير الـ Repository له (إذا لسا بتستخدمه هون)
         val searchViewModel = SearchViewModel(repository)
 
         setContent {
             BibliotechTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    SearchScreen(
-                        modifier = Modifier.padding(innerPadding),
-                        viewModel = searchViewModel
-                    )
-                }
+                // تمرير الـ repository المحدث تلقائياً جوات الـ AppNavigation
+                AppNavigation(repository = repository)
             }
         }
     }

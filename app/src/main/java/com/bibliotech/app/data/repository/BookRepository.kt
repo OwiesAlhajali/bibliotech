@@ -1,27 +1,18 @@
 package com.bibliotech.app.data.repository
 
-import android.content.Context
-import android.content.SharedPreferences
+import com.bibliotech.app.data.local.BookDao
+import com.bibliotech.app.data.model.BookEntity
+import com.bibliotech.app.data.model.RecentBookEntity
 import com.bibliotech.app.data.remote.BookDoc
 import com.bibliotech.app.data.remote.OpenLibraryApiService
-import com.google.gson.Gson
-import com.google.gson.reflect.TypeToken
-// الـ Imports الثلاثة السحرية يلي كانت ناقصة وطيرت الـ Flow والـ emit:
-import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.flow
-import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 
 class BookRepository(
     private val apiService: OpenLibraryApiService,
-    private val context: Context
+    private val bookDao: BookDao
 ) {
-    private val sharedPreferences: SharedPreferences =
-        context.getSharedPreferences("book_cache_prefs", Context.MODE_PRIVATE)
-    private val gson = Gson()
-    private val cacheKey = "recent_books"
 
-    // القائمة الافتراضية العالمية للكتب الـ 6
     private val defaultBooks = listOf(
         BookDoc("/works/OL258925W", "Rich Dad Poor Dad", listOf("Robert T. Kiyosaki"), 12644265),
         BookDoc("/works/OL82563W", "Harry Potter and the Philosopher's Stone", listOf("J. K. Rowling"), 10521236),
@@ -31,7 +22,6 @@ class BookRepository(
         BookDoc("/works/OL45322W", "Atomic Habits", listOf("James Clear"), 1236451)
     )
 
-    // 1. جلب كتب البحث من السيرفر
     suspend fun searchBooks(query: String): List<BookDoc> {
         return try {
             val response = apiService.searchBooks(query)
@@ -41,43 +31,68 @@ class BookRepository(
         }
     }
 
-    // 2. قراءة الكاش كـ Flow بخلفية مريحة لحماية الإقلاع
-    fun getRecentBooks(): Flow<List<BookDoc>> = flow {
-        val jsonString = sharedPreferences.getString(cacheKey, null)
-        if (jsonString == null) {
-            emit(defaultBooks)
+    // ==================== [ قسم المفضلة - REALTIME ROOM ] ====================
+
+    fun getFavoriteBooks(): Flow<List<BookDoc>> {
+        return bookDao.getAllCachedBooks().map { entities ->
+            entities.map { entity ->
+                BookDoc(
+                    key = entity.key,
+                    title = entity.title,
+                    author_name = entity.author_name?.let { listOf(it) },
+                    cover_i = entity.cover_i
+                )
+            }
+        }
+    }
+
+    suspend fun toggleFavoriteBook(book: BookDoc) {
+        val entity = BookEntity(
+            key = book.key,
+            title = book.title,
+            cover_i = book.cover_i,
+            author_name = book.author_name?.firstOrNull()
+        )
+        if (bookDao.isBookFavorite(book.key)) {
+            bookDao.deleteFavorite(entity)
         } else {
-            val type = object : TypeToken<List<BookDoc>>() {}.type
-            val booksList: List<BookDoc> = gson.fromJson(jsonString, type)
-            emit(booksList)
+            bookDao.insertFavorite(entity)
         }
-    }.flowOn(Dispatchers.IO) // ضفنا هاد السطر لضمان عدم حصول أي ثقل بالإقلاع
+    }
 
-    // 3. حفظ الكتاب مع دمج القائمة وتطبيق سياسة الإزاحة بالتتالي (FIFO)
-    fun saveBookToCache(newBook: BookDoc) {
-        val jsonString = sharedPreferences.getString(cacheKey, null)
-        val currentList = if (jsonString != null) {
-            val type = object : TypeToken<List<BookDoc>>() {}.type
-            gson.fromJson<List<BookDoc>>(jsonString, type).toMutableList()
-        } else {
-            defaultBooks.toMutableList()
+    // ==================== [ قسم الكتب الأخيرة - RECENT SEARCHES ] ====================
+
+    fun getRecentBooks(): Flow<List<BookDoc>> {
+        return bookDao.getRecentBooks().map { entities ->
+            if (entities.isEmpty()) {
+                defaultBooks
+            } else {
+                entities.map { entity ->
+                    BookDoc(
+                        key = entity.key,
+                        title = entity.title,
+                        author_name = entity.author_name?.let { listOf(it) },
+                        cover_i = entity.cover_i
+                    )
+                }
+            }
         }
+    }
 
-        // إذا الكتاب مكرر بنحذفه القديم عشان ينزل بالمرتبة 0 كأحدث كتاب
-        if (currentList.contains(newBook)) {
-            currentList.remove(newBook)
+    suspend fun saveBookToCache(book: BookDoc) {
+        bookDao.deleteRecentByKey(book.key)
+
+        val newRecent = RecentBookEntity(
+            key = book.key,
+            title = book.title,
+            cover_i = book.cover_i,
+            author_name = book.author_name?.firstOrNull(),
+            timestamp = System.currentTimeMillis()
+        )
+        bookDao.insertRecent(newRecent)
+
+        if (bookDao.getRecentCount() > 6) {
+            bookDao.deleteOldestRecent()
         }
-
-        // إضافة الكتاب الجديد في أول خيار (المرتبة 0)
-        currentList.add(0, newBook)
-
-        // إذا تجاوز إجمالي الكتب 6، نحذف الخيار الأخير بالتتالي
-        if (currentList.size > 6) {
-            currentList.removeAt(currentList.lastIndex)
-        }
-
-        // تم حل فخ التكرار: غيرنا اسم المتغير هون لـ jsonToSave عشان ما يضرب مع اللي فوق
-        val jsonToSave = gson.toJson(currentList)
-        sharedPreferences.edit().putString(cacheKey, jsonToSave).apply()
     }
 }

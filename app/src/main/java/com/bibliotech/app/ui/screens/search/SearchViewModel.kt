@@ -28,16 +28,23 @@ class SearchViewModel(
     private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
-    // تعديل هندسي: تحويل الكاش لـ StateFlow يقرأ تلقائياً من الـ Repository بخلفية مريحة
+    // 1. مراقبة كاش الكتب الأخيرة
     val recentBooks: StateFlow<List<BookDoc>> = repository.getRecentBooks()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = emptyList() // التطبيق بيفتح فوراً بقائمة فاضية بصفر ثانية تأخير
+            initialValue = emptyList()
+        )
+
+    // 2. المراقبة الحية واللحظية لقائمة المفضلة من الـ Room DB
+    val favoriteBooks: StateFlow<List<BookDoc>> = repository.getFavoriteBooks()
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = emptyList()
         )
 
     init {
-        // منطق البحث المطور مسبقاً (شغال تمام بالخلفية)
         viewModelScope.launch {
             _searchQuery
                 .debounce(150L)
@@ -51,7 +58,6 @@ class SearchViewModel(
         _searchQuery.value = newQuery
         if (newQuery.isBlank()) {
             _uiState.value = SearchUiState.Idle
-            // ما عاد بحاجة نستدعي دالة التحديث هون لأن الـ StateFlow بيراقب التغيير تلقائياً!
         }
     }
 
@@ -71,12 +77,17 @@ class SearchViewModel(
         }
     }
 
+    // 3. دالة كبسة الكتاب (تم فصلها وتنظيفها)
     fun onBookClicked(book: BookDoc) {
-        // تشغيل الحفظ بخيط خلفي مريح حتى لا يسبب أي تعليق بالواجهة
         viewModelScope.launch(Dispatchers.IO) {
             repository.saveBookToCache(book)
-            // بمجرد الحفظ بالـ SharedPreferences، الـ Flow في الـ Repository رح يلقط التحديث
-            // ويعكسه فوراً على الـ UI بدون ما نضطر نستدعي دوال تحديث يدوية!
+        }
+    }
+
+    // 4. دالة التبديل عند الضغط على القلب (مكتوبة بشكل مستقل وصحيح هنا)
+    fun onFavoriteToggleClicked(book: BookDoc) {
+        viewModelScope.launch(Dispatchers.IO) {
+            repository.toggleFavoriteBook(book)
         }
     }
 }

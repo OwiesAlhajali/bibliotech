@@ -14,9 +14,12 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.LibraryBooks
+import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.outlined.Book
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -29,29 +32,58 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.bibliotech.app.R
 import com.bibliotech.app.data.remote.BookDoc
 import com.bibliotech.app.ui.theme.*
 
-
-
-
 @Composable
-
 fun SearchScreen(
+    navController: NavController, // استقبال الـ Controller الرسمي
     modifier: Modifier = Modifier,
-    // التعديل الأول: جعل الـ ViewModel يخلق بشكل كسول (Lazy) وآمن للإقلاع
     viewModel: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ){
     val searchQuery by viewModel.searchQuery.collectAsState()
     val uiState by viewModel.uiState.collectAsState()
     val recentBooks by viewModel.recentBooks.collectAsState()
-
+    val favoriteBooks by viewModel.favoriteBooks.collectAsState()
+    androidx.activity.compose.BackHandler(enabled = searchQuery.isNotEmpty() || uiState !is SearchUiState.Idle) {
+        // عند الضغط على رجوع: فضّي نص البحث ورجّع الشاشة للوضع الافتراضي
+        viewModel.onQueryChanged("")
+    }
     Scaffold(
-        bottomBar = { BottomNavigationBar() }
+        bottomBar = {
+            // البوتوم بار هنا مربوط بالـ NavController الفعلي للتنقل
+            NavigationBar(containerColor = Color.White, modifier = Modifier.shadow(elevation = 8.dp)) {
+                NavigationBarItem(
+                    selected = true, // شاشة البحث نشطة
+                    onClick = { },
+                    icon = { Icon(Icons.Default.Search, contentDescription = null, tint = ModernPurple) },
+                    label = { Text("Search", color = ModernPurple, fontWeight = FontWeight.Bold) }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = {
+                        // تنقل آمن لشاشة المفضلة بدون تكرار الـ Stack
+                        navController.navigate("favorites_screen") {
+                            popUpTo("search_screen") { saveState = true }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                    icon = { Icon(Icons.Default.Favorite, contentDescription = null) },
+                    label = { Text("Favorites") }
+                )
+                NavigationBarItem(
+                    selected = false,
+                    onClick = { },
+                    icon = { Icon(Icons.Default.Person, contentDescription = null) },
+                    label = { Text("Account") }
+                )
+            }
+        }
     ) { innerPadding ->
-        // استخدام خلفية سادة صريحة خفيفة جداً بالرسم لتسريع فتح الشاشة فوراً
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -63,66 +95,43 @@ fun SearchScreen(
                     .fillMaxSize()
                     .padding(horizontal = 16.dp)
             ) {
-                // 1. الرأس الثابت السريع
                 HeaderSectionWithAnimation()
-
                 Spacer(modifier = Modifier.height(16.dp))
-
-                // 2. شريط البحث المطور
-                CustomModernSearchBar(
-                    query = searchQuery,
-                    onQueryChanged = { viewModel.onQueryChanged(it) }
-                )
-
+                CustomModernSearchBar(query = searchQuery, onQueryChanged = { viewModel.onQueryChanged(it) })
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 3. مساحة عرض المحتوى الديناميكي
-                Box(
-                    modifier = Modifier.weight(1f),
-                    contentAlignment = Alignment.TopCenter
-                ) {
+                Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
                     when (val state = uiState) {
+                        // جوات الـ when (val state = uiState) عند حالة الـ Idle:
                         is SearchUiState.Idle -> {
                             RecentSearchesSection(
                                 recentBooks = recentBooks,
-                                onBookClick = { viewModel.onBookClicked(it) }
+                                favoriteBooks = favoriteBooks, // مررها هنا كمان لتصل للدالة تحت
+                                onBookClick = { viewModel.onBookClicked(it) },
+                                onFavoriteToggle = { viewModel.onFavoriteToggleClicked(it) }
                             )
                         }
                         is SearchUiState.Loading -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(color = ModernPurple)
                             }
                         }
                         is SearchUiState.Empty -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = stringResource(id = R.string.no_results),
-                                    style = MaterialTheme.typography.bodyLarge,
-                                    color = ModernPurple.copy(alpha = 0.6f)
-                                )
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(text = stringResource(id = R.string.no_results), color = ModernPurple.copy(alpha = 0.6f))
                             }
                         }
                         is SearchUiState.Error -> {
-                            Box(
-                                modifier = Modifier.fillMaxSize(),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = state.message,
-                                    color = MaterialTheme.colorScheme.error
-                                )
+                            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                Text(text = state.message, color = MaterialTheme.colorScheme.error)
                             }
                         }
                         is SearchUiState.Success -> {
                             SearchResultsSection(
                                 books = state.books,
-                                onBookClick = { viewModel.onBookClicked(it) }
+                                favoriteBooks = favoriteBooks,
+                                onBookClick = { viewModel.onBookClicked(it) },
+                                onFavoriteToggle = { viewModel.onFavoriteToggleClicked(it) }
                             )
                         }
                     }
@@ -131,21 +140,12 @@ fun SearchScreen(
         }
     }
 }
-
 @Composable
 fun HeaderSectionWithAnimation() {
-    var isVisible by remember { mutableStateOf(false) }
-
-    // تشغيل الإنيميشن مرة واحدة فقط عند إقلاع الشاشة
-    LaunchedEffect(Unit) {
-        isVisible = true
-    }
-
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 20.dp)
-            // سحر السرعة: حجز حجم ثابت مسبقاً للـ Column يمنع الـ Re-layout والعك البصري
             .height(95.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -161,23 +161,13 @@ fun HeaderSectionWithAnimation() {
 
         Spacer(modifier = Modifier.height(8.dp))
 
-        // الإنيميشن المعدل: تقليل الـ Duration وتبسيط حركة الإزاحة (Slide) لتخفيف العبء على الـ GPU
-        androidx.compose.animation.AnimatedVisibility(
-            visible = isVisible,
-            enter = fadeIn(animationSpec = tween(durationMillis = 400)) +
-                    slideInVertically(
-                        initialOffsetY = { 20 }, // إزاحة خفيفة ورشيقة
-                        animationSpec = tween(durationMillis = 300)
-                    )
-        ) {
-            Text(
-                text = "Search, Read and Enjoy",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold,
-                color = ModernPurple.copy(alpha = 0.8f),
-                letterSpacing = 0.5.sp
-            )
-        }
+        Text(
+            text = "Search, Read and Enjoy",
+            fontSize = 18.sp,
+            fontWeight = FontWeight.SemiBold,
+            color = ModernPurple.copy(alpha = 0.8f),
+            letterSpacing = 0.5.sp
+        )
     }
 }
 
@@ -196,15 +186,13 @@ fun CustomModernSearchBar(
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = ModernPurple,
             unfocusedBorderColor = Color.Transparent,
-            disabledBorderColor = Color.Transparent,
-            errorBorderColor = Color.Transparent,
             focusedContainerColor = Color.White,
             unfocusedContainerColor = Color.White,
             focusedLabelColor = ModernPurple
         ),
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(elevation = 3.dp, shape = RoundedCornerShape(28.dp)) // تقليل الـ Elevation لتخفيف حسابات الظل البصرية
+            .shadow(elevation = 3.dp, shape = RoundedCornerShape(28.dp))
             .border(1.dp, ModernPurple.copy(alpha = 0.15f), RoundedCornerShape(28.dp))
     )
 }
@@ -212,7 +200,9 @@ fun CustomModernSearchBar(
 @Composable
 fun RecentSearchesSection(
     recentBooks: List<BookDoc>,
-    onBookClick: (BookDoc) -> Unit
+    favoriteBooks: List<BookDoc>, // تأكد إنها بتستقبل القائمة الحية هون
+    onBookClick: (BookDoc) -> Unit,
+    onFavoriteToggle: (BookDoc) -> Unit
 ) {
     Column(modifier = Modifier.fillMaxSize()) {
         Text(
@@ -222,78 +212,108 @@ fun RecentSearchesSection(
             color = Color.Black.copy(alpha = 0.8f),
             modifier = Modifier.padding(bottom = 14.dp, start = 4.dp)
         )
+
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             horizontalArrangement = Arrangement.spacedBy(12.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(recentBooks, key = { it.key }) { book -> // إضافة key للـ items يسرع الـ Grid بمقدار 10 أضعاف في الكومبوز
-                ModernBookGridItem(book = book, onClick = { onBookClick(book) })
+            items(recentBooks, key = { it.key }) { book ->
+                // 1. فحص لحظي إذا كان الكتاب الحالي موجود بالمفضلة أولا
+                val isBookFav = favoriteBooks.any { it.key == book.key }
+
+                // 2. تمرير البارامترات كاملة للمربع عشان يقلب اللون فوراً
+                ModernBookGridItem(
+                    book = book,
+                    isFavorite = isBookFav, // تمرير الحالة الحية
+                    onClick = { onBookClick(book) },
+                    onFavoriteToggle = { onFavoriteToggle(book) } // تمرير كبسة القلب
+                )
             }
         }
     }
 }
 
 @Composable
-fun ModernBookGridItem(book: BookDoc, onClick: () -> Unit) {
+fun ModernBookGridItem(
+    book: BookDoc,
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onFavoriteToggle: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(120.dp)
+            .height(130.dp)
             .clickable { onClick() }
             .shadow(elevation = 1.dp, shape = RoundedCornerShape(18.dp)),
         shape = RoundedCornerShape(18.dp),
         colors = CardDefaults.cardColors(containerColor = GlassCardBg)
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(10.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            if (book.cover_i != null) {
-                AsyncImage(
-                    model = "https://covers.openlibrary.org/b/id/${book.cover_i}-S.jpg",
-                    contentDescription = null,
-                    modifier = Modifier
-                        .size(width = 45.dp, height = 68.dp)
-                        .clip(RoundedCornerShape(6.dp)),
-                    contentScale = ContentScale.Crop
-                )
-            } else {
-                Box(
-                    modifier = Modifier
-                        .size(width = 45.dp, height = 68.dp)
-                        .clip(RoundedCornerShape(6.dp))
-                        .background(ModernPurple.copy(alpha = 0.08f)),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(text = "📖", fontSize = 18.sp)
+        Box(modifier = Modifier.fillMaxSize()) {
+            Row(
+                modifier = Modifier.fillMaxSize().padding(10.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                if (book.cover_i != null ) {
+                    AsyncImage(
+                        model = "https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg",
+                        contentDescription = null,
+                        modifier = Modifier.size(width = 45.dp, height = 68.dp).clip(RoundedCornerShape(6.dp)),
+                        contentScale = ContentScale.Crop,
+
+                    )
+                } else {
+                    Box(
+                        modifier = Modifier
+                            .size(width = 45.dp, height = 68.dp) // نفس حجم الـ AsyncImage بالظبط
+                            .clip(RoundedCornerShape(6.dp))      // نفس الحواف المنحنية
+                            .background(Color(0xFFF0F2F5)),     // الرمادي الفيسبوكي الناعم
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.Book,
+                            contentDescription = "No Cover Available",
+                            modifier = Modifier.size(24.dp),    // صغّرنا الأيقونة شوي لتناسب حجم الـ Box الصغير
+                            tint = Color(0xFF8A8D91)
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(10.dp))
+
+                Column(modifier = Modifier.weight(1f).padding(end = 24.dp)) {
+                    Text(
+                        text = book.title,
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 2,
+                        color = Color.Black.copy(alpha = 0.85f),
+                        lineHeight = 18.sp
+                    )
+                    Spacer(modifier = Modifier.height(2.dp))
+                    book.author_name?.let { authors ->
+                        Text(
+                            text = authors.firstOrNull() ?: "",
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium,
+                            maxLines = 1,
+                            color = ModernPurple.copy(alpha = 0.7f)
+                        )
+                    }
                 }
             }
 
-            Spacer(modifier = Modifier.width(10.dp))
-
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = book.title,
-                    fontSize = 14.sp,
-                    fontWeight = FontWeight.Bold,
-                    maxLines = 2,
-                    color = Color.Black.copy(alpha = 0.85f),
-                    lineHeight = 18.sp
+            IconButton(
+                onClick = onFavoriteToggle,
+                modifier = Modifier.align(Alignment.TopEnd).padding(4.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    tint = if (isFavorite) ModernPurple else Color.LightGray
                 )
-                Spacer(modifier = Modifier.height(2.dp))
-                book.author_name?.let { authors ->
-                    Text(
-                        text = authors.firstOrNull() ?: "",
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Medium,
-                        maxLines = 1,
-                        color = ModernPurple.copy(alpha = 0.7f)
-                    )
-                }
             }
         }
     }
@@ -302,20 +322,33 @@ fun ModernBookGridItem(book: BookDoc, onClick: () -> Unit) {
 @Composable
 fun SearchResultsSection(
     books: List<BookDoc>,
-    onBookClick: (BookDoc) -> Unit
+    favoriteBooks: List<BookDoc>,
+    onBookClick: (BookDoc) -> Unit,
+    onFavoriteToggle: (BookDoc) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
-        items(books, key = { it.key }) { book -> // إضافة key هنا أيضاً لتسريع قائمة النتائج
-            ModernBookRowItem(book = book, onClick = { onBookClick(book) })
+        items(books, key = { it.key }) { book ->
+            val isBookFav = favoriteBooks.any { it.key == book.key }
+            ModernBookRowItem(
+                book = book,
+                isFavorite = isBookFav,
+                onClick = { onBookClick(book) },
+                onFavoriteToggle = { onFavoriteToggle(book) }
+            )
         }
     }
 }
 
 @Composable
-fun ModernBookRowItem(book: BookDoc, onClick: () -> Unit) {
+fun ModernBookRowItem(
+    book: BookDoc,
+    isFavorite: Boolean,
+    onClick: () -> Unit,
+    onFavoriteToggle: () -> Unit
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -325,29 +358,30 @@ fun ModernBookRowItem(book: BookDoc, onClick: () -> Unit) {
         colors = CardDefaults.cardColors(containerColor = GlassCardBg)
     ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             if (book.cover_i != null) {
                 AsyncImage(
-                    model = "https://covers.openlibrary.org/b/id/${book.cover_i}-S.jpg",
+                    model = "https://covers.openlibrary.org/b/id/${book.cover_i}-M.jpg",
                     contentDescription = null,
-                    modifier = Modifier
-                        .size(width = 52.dp, height = 78.dp)
-                        .clip(RoundedCornerShape(8.dp)),
+                    modifier = Modifier.size(width = 52.dp, height = 78.dp).clip(RoundedCornerShape(8.dp)),
                     contentScale = ContentScale.Crop
                 )
             } else {
                 Box(
                     modifier = Modifier
-                        .size(width = 52.dp, height = 78.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(ModernPurple.copy(alpha = 0.08f)),
+                        .size(width = 45.dp, height = 68.dp) // نفس حجم الـ AsyncImage بالظبط
+                        .clip(RoundedCornerShape(6.dp))      // نفس الحواف المنحنية
+                        .background(Color(0xFFF0F2F5)),     // الرمادي الفيسبوكي الناعم
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = "📖", fontSize = 22.sp)
+                    Icon(
+                        imageVector = Icons.Outlined.Book,
+                        contentDescription = "No Cover Available",
+                        modifier = Modifier.size(24.dp),    // صغّرنا الأيقونة شوي لتناسب حجم الـ Box الصغير
+                        tint = Color(0xFF8A8D91)
+                    )
                 }
             }
 
@@ -370,31 +404,43 @@ fun ModernBookRowItem(book: BookDoc, onClick: () -> Unit) {
                     )
                 }
             }
+
+            IconButton(onClick = onFavoriteToggle) {
+                Icon(
+                    imageVector = Icons.Default.Favorite,
+                    contentDescription = null,
+                    tint = if (isFavorite) ModernPurple else Color.LightGray
+                )
+            }
         }
     }
 }
-
 @Composable
-fun BottomNavigationBar() {
+fun BottomNavigationBar(navController: androidx.navigation.NavController) {
     NavigationBar(
         containerColor = Color.White,
         modifier = Modifier.shadow(elevation = 8.dp)
     ) {
         NavigationBarItem(
-            selected = true,
-            onClick = { },
+            selected = true, // شاشة البحث هي النشطة حالياً
+            onClick = {
+                // إذا ضغط ع السيرش وهو جواه ما يعمل شي
+            },
             icon = { Icon(Icons.Default.Search, contentDescription = null, tint = ModernPurple) },
             label = { Text("Search", color = ModernPurple, fontWeight = FontWeight.Bold) }
         )
         NavigationBarItem(
             selected = false,
-            onClick = { },
+            onClick = {
+                // الانتقال السحري لشاشة المفضلة (حسب اسم الـ Route عندك بالـ NavHost)
+                navController.navigate("favorites_screen")
+            },
             icon = { Icon(Icons.Default.Favorite, contentDescription = null) },
             label = { Text("Favorites") }
         )
         NavigationBarItem(
             selected = false,
-            onClick = { },
+            onClick = { /* التنقل للأكاونت لاحقاً */ },
             icon = { Icon(Icons.Default.Person, contentDescription = null) },
             label = { Text("Account") }
         )
