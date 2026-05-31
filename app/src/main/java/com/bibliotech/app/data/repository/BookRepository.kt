@@ -1,6 +1,7 @@
 package com.bibliotech.app.data.repository
 
 import com.bibliotech.app.data.local.BookDao
+import com.bibliotech.app.data.model.BookDetailsResponse
 import com.bibliotech.app.data.model.BookEntity
 import com.bibliotech.app.data.model.RecentBookEntity
 import com.bibliotech.app.data.remote.BookDoc
@@ -94,5 +95,8 @@ class BookRepository(
         if (bookDao.getRecentCount() > 6) {
             bookDao.deleteOldestRecent()
         }
+    }
+    suspend fun getBookDetails(bookKey: String): BookDetailsResponse {
+        return apiService.getBookDetails(bookKey)
     }
 }

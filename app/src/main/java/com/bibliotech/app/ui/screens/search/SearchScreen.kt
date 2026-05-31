@@ -83,7 +83,9 @@ fun SearchScreen(
                 )
             }
         }
-    ) { innerPadding ->
+    )
+
+    { innerPadding ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -107,7 +109,10 @@ fun SearchScreen(
                             RecentSearchesSection(
                                 recentBooks = recentBooks,
                                 favoriteBooks = favoriteBooks, // مررها هنا كمان لتصل للدالة تحت
-                                onBookClick = { viewModel.onBookClicked(it) },
+                                onBookClick = { book ->
+                                    viewModel.onBookClicked(book)          // حفظ الكاش
+                                    viewModel.openBookDetailsSheet(book)   // 🔥 فتح الـ Sheet وجلب البيانات
+                                },
                                 onFavoriteToggle = { viewModel.onFavoriteToggleClicked(it) }
                             )
                         }
@@ -130,7 +135,10 @@ fun SearchScreen(
                             SearchResultsSection(
                                 books = state.books,
                                 favoriteBooks = favoriteBooks,
-                                onBookClick = { viewModel.onBookClicked(it) },
+                                onBookClick = { book ->
+                                    viewModel.onBookClicked(book)          // حفظ الكاش
+                                    viewModel.openBookDetailsSheet(book)   // 🔥 فتح الـ Sheet وجلب البيانات
+                                },
                                 onFavoriteToggle = { viewModel.onFavoriteToggleClicked(it) }
                             )
                         }
@@ -138,6 +146,14 @@ fun SearchScreen(
                 }
             }
         }
+    }
+    viewModel.selectedBookForSheet?.let { selectedBook ->
+        com.bibliotech.app.ui.components.BookDetailsBottomSheet(
+            book = selectedBook,
+            description = viewModel.sheetDescriptionState,
+            numberOfPages = viewModel.sheetNumberOfPagesState,
+            onDismiss = { viewModel.closeBookDetailsSheet() }
+        )
     }
 }
 @Composable
@@ -324,23 +340,32 @@ fun SearchResultsSection(
     books: List<BookDoc>,
     favoriteBooks: List<BookDoc>,
     onBookClick: (BookDoc) -> Unit,
-    onFavoriteToggle: (BookDoc) -> Unit
+    onFavoriteToggle: (BookDoc) -> Unit,
+    modifier: Modifier = Modifier
 ) {
+    // 🔥 الحاضن الأساسي اللي كان ناقص الـ items عشان يشتغلوا 🔥
     LazyColumn(
-        modifier = Modifier.fillMaxSize(),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        modifier = modifier.fillMaxSize(),
+        contentPadding = PaddingValues(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(books, key = { it.key }) { book ->
             val isBookFav = favoriteBooks.any { it.key == book.key }
+
             ModernBookRowItem(
                 book = book,
                 isFavorite = isBookFav,
-                onClick = { onBookClick(book) },
-                onFavoriteToggle = { onFavoriteToggle(book) }
+                onClick = {
+                    onBookClick(book)
+                },
+                onFavoriteToggle = {
+                    onFavoriteToggle(book)
+                }
             )
         }
     }
-}
+} // نهاية الدالة قفلناها صح
+
 
 @Composable
 fun ModernBookRowItem(

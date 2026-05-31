@@ -91,7 +91,7 @@ fun FavoritesScreen(
                             ModernBookGridItem(
                                 book = book,
                                 isFavorite = true,
-                                onClick = { },
+                                onClick = {viewModel.openBookDetailsSheet(book) },
                                 onFavoriteToggle = { viewModel.onRemoveFavoriteClicked(book) }
                             )
                         }
@@ -99,5 +99,13 @@ fun FavoritesScreen(
                 }
             }
         }
+    }
+    viewModel.selectedBookForSheet?.let { selectedBook ->
+        com.bibliotech.app.ui.components.BookDetailsBottomSheet(
+            book = selectedBook,
+            description = viewModel.sheetDescriptionState,
+            numberOfPages = viewModel.sheetNumberOfPagesState,
+            onDismiss = { viewModel.closeBookDetailsSheet() } // إغلاق الـ Sheet عند السحب لأسفل
+        )
     }
 }

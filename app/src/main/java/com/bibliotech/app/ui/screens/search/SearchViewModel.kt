@@ -1,5 +1,8 @@
 package com.bibliotech.app.ui.screens.search
 
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bibliotech.app.data.remote.BookDoc
@@ -43,6 +46,16 @@ class SearchViewModel(
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
+    // 🔥 تتبع الكتاب الحالي اللي ضغط عليه المستخدم لعرضه بالـ Bottom Sheet 🔥
+    var selectedBookForSheet by mutableStateOf<BookDoc?>(null)
+        private set
+
+    // 🔥 تتبع حالة الوصف الجاي من الـ API (إذا كان عم يحمل، أو خلص، أو فاضي) 🔥
+    var sheetDescriptionState by mutableStateOf<String>("Loading...")
+        private set
+
+    var sheetNumberOfPagesState by mutableStateOf<Int?>(null)
+        private set
 
     init {
         viewModelScope.launch {
@@ -89,5 +102,33 @@ class SearchViewModel(
         viewModelScope.launch(Dispatchers.IO) {
             repository.toggleFavoriteBook(book)
         }
+    }
+    // 🔥 دالة تفتح الـ Sheet وتبدأ تجلب تفاصيل الكتاب فوراً بخلفية الكوروتين 🔥
+    fun openBookDetailsSheet(book: BookDoc) {
+        selectedBookForSheet = book
+        sheetDescriptionState = "Loading..." // إعادة تعيين النص الافتراضي أثناء التحميل
+        sheetNumberOfPagesState = null
+
+        viewModelScope.launch {
+            try {
+                // تنظيف الـ key من كلمة "/works/" لو كانت جاي كاملة من الـ API
+                val cleanKey = book.key.removePrefix("/")
+                val details = repository.getBookDetails(cleanKey)
+
+                sheetDescriptionState = if (!details.description.isNullOrBlank()) {
+                    details.description
+                } else {
+                    "No description available for this book."
+                }
+                sheetNumberOfPagesState = details.numberOfPages
+            } catch (e: Exception) {
+                sheetDescriptionState = "Failed to load description. Please try again."
+            }
+        }
+    }
+
+    // 🔥 دالة لإغلاق الـ Sheet وتصفير البيانات الفتح القادم 🔥
+    fun closeBookDetailsSheet() {
+        selectedBookForSheet = null
     }
 }
