@@ -22,15 +22,15 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    // Merge light theme values: prefer the more descriptive purple palette where appropriate
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40,
+    // Use splash screen palette for light theme
+    primary = Gold,
+    secondary = SoftGray,
+    tertiary = Navy,
     background = BackgroundLight,
     surface = Color.White,
-    onPrimary = White,
+    onPrimary = Navy,
     onSecondary = Navy,
-    onTertiary = Navy,
+    onTertiary = White,
     onBackground = Navy,
     onSurface = Navy
 )
