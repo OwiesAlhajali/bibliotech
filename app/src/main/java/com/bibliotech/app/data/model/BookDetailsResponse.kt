@@ -15,7 +15,7 @@ data class BookDetailsResponse(
     val description: String?
 )
 
-// 🔥 محول ذكي لأن الـ API أحياناً يرجع الوصف كنص وأحياناً كـ Object 🔥
+
 class DescriptionDeserializer : JsonDeserializer<String> {
     override fun deserialize(
         json: JsonElement,

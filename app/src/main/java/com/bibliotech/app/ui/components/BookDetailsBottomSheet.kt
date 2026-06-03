@@ -29,6 +29,8 @@ fun BookDetailsBottomSheet(
     description: String,
     numberOfPages: Int?,
     onDismiss: () -> Unit,
+    onBrowseClick: (String) -> Unit,
+    onDownloadClick: (BookDoc) -> Unit,
     modifier: Modifier = Modifier
 ) {
     ModalBottomSheet(
@@ -45,7 +47,7 @@ fun BookDetailsBottomSheet(
                 .verticalScroll(rememberScrollState()),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // 1. غلاف الكتاب الحقيقي مع معالجة الصورة
+
             Box(
                 modifier = Modifier
                     .size(width = 110.dp, height = 165.dp)
@@ -68,7 +70,7 @@ fun BookDetailsBottomSheet(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // 2. اسم الكتاب
+
             Text(
                 text = book.title,
                 fontSize = 20.sp,
@@ -79,7 +81,7 @@ fun BookDetailsBottomSheet(
 
             Spacer(modifier = Modifier.height(4.dp))
 
-            // 3. اسم الكاتب
+
             Text(
                 text = book.author_name?.joinToString(", ") ?: "Unknown Author",
                 fontSize = 14.sp,
@@ -89,7 +91,7 @@ fun BookDetailsBottomSheet(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // 4. سطر البيانات الإضافية
+
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.Center,
@@ -116,7 +118,7 @@ fun BookDetailsBottomSheet(
             HorizontalDivider(color = MaterialTheme.colorScheme.surfaceVariant)
             Spacer(modifier = Modifier.height(16.dp))
 
-            // 5. قسم الوصف
+
             Text(
                 text = "Description",
                 fontSize = 16.sp,
@@ -136,22 +138,27 @@ fun BookDetailsBottomSheet(
             )
 
             Spacer(modifier = Modifier.height(24.dp))
-
-            // 6. الأزرار السفلية
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+
                 OutlinedButton(
-                    onClick = { /* ميزة قادمة للتصفح */ },
+                    onClick = {
+
+                        onBrowseClick(book.key)
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(text = "Browse")
                 }
 
+
                 Button(
-                    onClick = { /* ميزة قادمة للتحميل */ },
+                    onClick = {
+                        onDownloadClick(book)
+                    },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(8.dp)
                 ) {

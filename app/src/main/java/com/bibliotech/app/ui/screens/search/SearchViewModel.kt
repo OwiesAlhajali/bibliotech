@@ -3,10 +3,10 @@ package com.bibliotech.app.ui.screens.search
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bibliotech.app.data.remote.BookDoc
 import com.bibliotech.app.data.repository.BookRepository
+import com.bibliotech.app.data.utils.AndroidDownloadManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.*
@@ -22,8 +22,11 @@ sealed interface SearchUiState {
 
 @OptIn(FlowPreview::class)
 class SearchViewModel(
+    application: android.app.Application,
     private val repository: BookRepository
-) : ViewModel() {
+) : androidx.lifecycle.AndroidViewModel(application) {
+
+    private val bookDownloadManager = AndroidDownloadManager(application)
 
     private val _searchQuery = MutableStateFlow("")
     val searchQuery: StateFlow<String> = _searchQuery.asStateFlow()
@@ -31,7 +34,7 @@ class SearchViewModel(
     private val _uiState = MutableStateFlow<SearchUiState>(SearchUiState.Idle)
     val uiState: StateFlow<SearchUiState> = _uiState.asStateFlow()
 
-    // 1. مراقبة كاش الكتب الأخيرة
+
     val recentBooks: StateFlow<List<BookDoc>> = repository.getRecentBooks()
         .stateIn(
             scope = viewModelScope,
@@ -39,18 +42,19 @@ class SearchViewModel(
             initialValue = emptyList()
         )
 
-    // 2. المراقبة الحية واللحظية لقائمة المفضلة من الـ Room DB
+
     val favoriteBooks: StateFlow<List<BookDoc>> = repository.getFavoriteBooks()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-    // 🔥 تتبع الكتاب الحالي اللي ضغط عليه المستخدم لعرضه بالـ Bottom Sheet 🔥
+
+
     var selectedBookForSheet by mutableStateOf<BookDoc?>(null)
         private set
 
-    // 🔥 تتبع حالة الوصف الجاي من الـ API (إذا كان عم يحمل، أو خلص، أو فاضي) 🔥
+
     var sheetDescriptionState by mutableStateOf<String>("Loading...")
         private set
 
@@ -90,28 +94,28 @@ class SearchViewModel(
         }
     }
 
-    // 3. دالة كبسة الكتاب (تم فصلها وتنظيفها)
+
     fun onBookClicked(book: BookDoc) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.saveBookToCache(book)
         }
     }
 
-    // 4. دالة التبديل عند الضغط على القلب (مكتوبة بشكل مستقل وصحيح هنا)
+
     fun onFavoriteToggleClicked(book: BookDoc) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.toggleFavoriteBook(book)
         }
     }
-    // 🔥 دالة تفتح الـ Sheet وتبدأ تجلب تفاصيل الكتاب فوراً بخلفية الكوروتين 🔥
+
+
     fun openBookDetailsSheet(book: BookDoc) {
         selectedBookForSheet = book
-        sheetDescriptionState = "Loading..." // إعادة تعيين النص الافتراضي أثناء التحميل
+        sheetDescriptionState = "Loading..."
         sheetNumberOfPagesState = null
 
         viewModelScope.launch {
             try {
-                // تنظيف الـ key من كلمة "/works/" لو كانت جاي كاملة من الـ API
                 val cleanKey = book.key.removePrefix("/")
                 val details = repository.getBookDetails(cleanKey)
 
@@ -127,8 +131,18 @@ class SearchViewModel(
         }
     }
 
-    // 🔥 دالة لإغلاق الـ Sheet وتصفير البيانات الفتح القادم 🔥
+
     fun closeBookDetailsSheet() {
         selectedBookForSheet = null
+    }
+
+
+    fun downloadBook(book: BookDoc) {
+        val downloadUrl = "https://ia800802.us.archive.org/25/items/2016TheLinuxCommandLine/2016_the-linux-command-line_a-complete-introduction.pdf"
+        try {
+            bookDownloadManager.downloadBook(url = downloadUrl, bookTitle = book.title)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
     }
 }

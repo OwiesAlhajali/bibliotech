@@ -32,7 +32,6 @@ class BookRepository(
         }
     }
 
-    // ==================== [ قسم المفضلة - REALTIME ROOM ] ====================
 
     fun getFavoriteBooks(): Flow<List<BookDoc>> {
         return bookDao.getAllCachedBooks().map { entities ->
@@ -61,7 +60,7 @@ class BookRepository(
         }
     }
 
-    // ==================== [ قسم الكتب الأخيرة - RECENT SEARCHES ] ====================
+
 
     fun getRecentBooks(): Flow<List<BookDoc>> {
         return bookDao.getRecentBooks().map { entities ->

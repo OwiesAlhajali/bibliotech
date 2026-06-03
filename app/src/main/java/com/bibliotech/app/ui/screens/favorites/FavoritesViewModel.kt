@@ -1,12 +1,12 @@
-package com.bibliotech.app.ui.screens.favorites // اسم الباكيدج الجديد والمستقل
+package com.bibliotech.app.ui.screens.favorites
 
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bibliotech.app.data.remote.BookDoc
 import com.bibliotech.app.data.repository.BookRepository
+import com.bibliotech.app.data.utils.AndroidDownloadManager
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -14,17 +14,22 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 class FavoritesViewModel(
+    application: android.app.Application,
     private val repository: BookRepository
-) : ViewModel() {
+) : androidx.lifecycle.AndroidViewModel(application) {
 
-    // قراءة مستمرة لقائمة المفضلة وتحويلها لـ StateFlow بخلفية مأمنة وبصفر ثانية تأخير
+
+    private val bookDownloadManager = AndroidDownloadManager(application)
+
+
     val favoriteBooks: StateFlow<List<BookDoc>> = repository.getFavoriteBooks()
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
             initialValue = emptyList()
         )
-    // 🔥 تتبع الكتاب الحالي المختار في شاشة المفضلة 🔥
+
+
     var selectedBookForSheet by mutableStateOf<BookDoc?>(null)
         private set
 
@@ -34,13 +39,14 @@ class FavoritesViewModel(
     var sheetNumberOfPagesState by mutableStateOf<Int?>(null)
         private set
 
-    // دالة حذف أو تبديل حالة الكتاب من داخل شاشة المفضلة
+
     fun onRemoveFavoriteClicked(book: BookDoc) {
         viewModelScope.launch(Dispatchers.IO) {
             repository.toggleFavoriteBook(book)
         }
     }
-    // 🔥 جلب تفاصيل الكتاب عند الضغط عليه من شاشة المفضلة 🔥
+
+
     fun openBookDetailsSheet(book: BookDoc) {
         selectedBookForSheet = book
         sheetDescriptionState = "Loading..."
@@ -66,5 +72,14 @@ class FavoritesViewModel(
     fun closeBookDetailsSheet() {
         selectedBookForSheet = null
     }
-}
 
+
+    fun downloadBook(book: BookDoc) {
+        val downloadUrl = "https://archive.org/download/2016TheLinuxCommandLine/2016_the-linux-command-line-a-complete-introduction.pdf"
+        try {
+            bookDownloadManager.downloadBook(url = downloadUrl, bookTitle = book.title)
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+}

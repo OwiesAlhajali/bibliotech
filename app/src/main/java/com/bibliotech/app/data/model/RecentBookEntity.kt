@@ -9,5 +9,5 @@ data class RecentBookEntity(
     val title: String,
     val cover_i: Int?,
     val author_name: String?,
-    val timestamp: Long // هاد الحقل السحري عشان نرتب بيه الأحدث فالأحدث تلقائياً!
+    val timestamp: Long
 )

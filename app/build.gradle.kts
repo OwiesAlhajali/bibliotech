@@ -62,11 +62,8 @@ dependencies {
     implementation("com.squareup.retrofit2:converter-gson:2.11.0")
     implementation("io.coil-kt:coil-compose:2.4.0")
     implementation("androidx.compose.material:material-icons-extended")
-    // مكتبة Room الأساسية
     implementation("androidx.room:room-runtime:2.6.1")
-// مكتبة الـ Compiler والـ Coroutines لدعم الـ Flow
     implementation("androidx.room:room-ktx:2.6.1")
-    // امسح سطر الـ ksp المكسور وحط هاد بداله:
     kapt("androidx.room:room-compiler:2.6.1")
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

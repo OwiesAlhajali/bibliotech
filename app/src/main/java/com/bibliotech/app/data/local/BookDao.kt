@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface BookDao {
 
-    // --- قسم المفضلة ---
+
     @Query("SELECT * FROM BookEntity")
     fun getAllCachedBooks(): Flow<List<BookEntity>>
 
@@ -26,7 +26,7 @@ interface BookDao {
     suspend fun isBookFavorite(bookKey: String): Boolean
 
 
-    // --- قسم الكتب الأخيرة (Recent Searches) ---
+
     @Query("SELECT * FROM recent_books ORDER BY timestamp DESC")
     fun getRecentBooks(): Flow<List<RecentBookEntity>>
 

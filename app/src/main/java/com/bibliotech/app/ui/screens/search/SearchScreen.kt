@@ -40,7 +40,7 @@ import com.bibliotech.app.ui.theme.*
 
 @Composable
 fun SearchScreen(
-    navController: NavController, // استقبال الـ Controller الرسمي
+    navController: NavController,
     modifier: Modifier = Modifier,
     viewModel: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
 ){
@@ -49,15 +49,15 @@ fun SearchScreen(
     val recentBooks by viewModel.recentBooks.collectAsState()
     val favoriteBooks by viewModel.favoriteBooks.collectAsState()
     androidx.activity.compose.BackHandler(enabled = searchQuery.isNotEmpty() || uiState !is SearchUiState.Idle) {
-        // عند الضغط على رجوع: فضّي نص البحث ورجّع الشاشة للوضع الافتراضي
+
         viewModel.onQueryChanged("")
     }
     Scaffold(
         bottomBar = {
-            // البوتوم بار هنا مربوط بالـ NavController الفعلي للتنقل
+
             NavigationBar(containerColor = Color.White, modifier = Modifier.shadow(elevation = 8.dp)) {
                 NavigationBarItem(
-                    selected = true, // شاشة البحث نشطة
+                    selected = true,
                     onClick = { },
                     icon = { Icon(Icons.Default.Search, contentDescription = null, tint = ModernPurple) },
                     label = { Text("Search", color = ModernPurple, fontWeight = FontWeight.Bold) }
@@ -65,7 +65,7 @@ fun SearchScreen(
                 NavigationBarItem(
                     selected = false,
                     onClick = {
-                        // تنقل آمن لشاشة المفضلة بدون تكرار الـ Stack
+
                         navController.navigate("favorites_screen") {
                             popUpTo("search_screen") { saveState = true }
                             launchSingleTop = true
@@ -104,14 +104,14 @@ fun SearchScreen(
 
                 Box(modifier = Modifier.weight(1f), contentAlignment = Alignment.TopCenter) {
                     when (val state = uiState) {
-                        // جوات الـ when (val state = uiState) عند حالة الـ Idle:
+
                         is SearchUiState.Idle -> {
                             RecentSearchesSection(
                                 recentBooks = recentBooks,
-                                favoriteBooks = favoriteBooks, // مررها هنا كمان لتصل للدالة تحت
+                                favoriteBooks = favoriteBooks,
                                 onBookClick = { book ->
-                                    viewModel.onBookClicked(book)          // حفظ الكاش
-                                    viewModel.openBookDetailsSheet(book)   // 🔥 فتح الـ Sheet وجلب البيانات
+                                    viewModel.onBookClicked(book)
+                                    viewModel.openBookDetailsSheet(book)
                                 },
                                 onFavoriteToggle = { viewModel.onFavoriteToggleClicked(it) }
                             )
@@ -136,8 +136,8 @@ fun SearchScreen(
                                 books = state.books,
                                 favoriteBooks = favoriteBooks,
                                 onBookClick = { book ->
-                                    viewModel.onBookClicked(book)          // حفظ الكاش
-                                    viewModel.openBookDetailsSheet(book)   // 🔥 فتح الـ Sheet وجلب البيانات
+                                    viewModel.onBookClicked(book)
+                                    viewModel.openBookDetailsSheet(book)
                                 },
                                 onFavoriteToggle = { viewModel.onFavoriteToggleClicked(it) }
                             )
@@ -152,7 +152,11 @@ fun SearchScreen(
             book = selectedBook,
             description = viewModel.sheetDescriptionState,
             numberOfPages = viewModel.sheetNumberOfPagesState,
-            onDismiss = { viewModel.closeBookDetailsSheet() }
+            onDismiss = { viewModel.closeBookDetailsSheet() } ,
+            onDownloadClick = { book -> viewModel.downloadBook(book) },
+            onBrowseClick = { bookKey ->
+                navController.navigate("book_reader?bookKey=$bookKey")
+            }
         )
     }
 }
@@ -216,7 +220,7 @@ fun CustomModernSearchBar(
 @Composable
 fun RecentSearchesSection(
     recentBooks: List<BookDoc>,
-    favoriteBooks: List<BookDoc>, // تأكد إنها بتستقبل القائمة الحية هون
+    favoriteBooks: List<BookDoc>,
     onBookClick: (BookDoc) -> Unit,
     onFavoriteToggle: (BookDoc) -> Unit
 ) {
@@ -236,15 +240,15 @@ fun RecentSearchesSection(
             modifier = Modifier.fillMaxSize()
         ) {
             items(recentBooks, key = { it.key }) { book ->
-                // 1. فحص لحظي إذا كان الكتاب الحالي موجود بالمفضلة أولا
+
                 val isBookFav = favoriteBooks.any { it.key == book.key }
 
-                // 2. تمرير البارامترات كاملة للمربع عشان يقلب اللون فوراً
+
                 ModernBookGridItem(
                     book = book,
-                    isFavorite = isBookFav, // تمرير الحالة الحية
+                    isFavorite = isBookFav,
                     onClick = { onBookClick(book) },
-                    onFavoriteToggle = { onFavoriteToggle(book) } // تمرير كبسة القلب
+                    onFavoriteToggle = { onFavoriteToggle(book) }
                 )
             }
         }
@@ -283,15 +287,15 @@ fun ModernBookGridItem(
                 } else {
                     Box(
                         modifier = Modifier
-                            .size(width = 45.dp, height = 68.dp) // نفس حجم الـ AsyncImage بالظبط
-                            .clip(RoundedCornerShape(6.dp))      // نفس الحواف المنحنية
-                            .background(Color(0xFFF0F2F5)),     // الرمادي الفيسبوكي الناعم
+                            .size(width = 45.dp, height = 68.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(Color(0xFFF0F2F5)),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = Icons.Outlined.Book,
                             contentDescription = "No Cover Available",
-                            modifier = Modifier.size(24.dp),    // صغّرنا الأيقونة شوي لتناسب حجم الـ Box الصغير
+                            modifier = Modifier.size(24.dp),
                             tint = Color(0xFF8A8D91)
                         )
                     }
@@ -343,7 +347,7 @@ fun SearchResultsSection(
     onFavoriteToggle: (BookDoc) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    // 🔥 الحاضن الأساسي اللي كان ناقص الـ items عشان يشتغلوا 🔥
+
     LazyColumn(
         modifier = modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
@@ -364,7 +368,7 @@ fun SearchResultsSection(
             )
         }
     }
-} // نهاية الدالة قفلناها صح
+}
 
 
 @Composable
@@ -396,15 +400,15 @@ fun ModernBookRowItem(
             } else {
                 Box(
                     modifier = Modifier
-                        .size(width = 45.dp, height = 68.dp) // نفس حجم الـ AsyncImage بالظبط
-                        .clip(RoundedCornerShape(6.dp))      // نفس الحواف المنحنية
-                        .background(Color(0xFFF0F2F5)),     // الرمادي الفيسبوكي الناعم
+                        .size(width = 45.dp, height = 68.dp)
+                        .clip(RoundedCornerShape(6.dp))
+                        .background(Color(0xFFF0F2F5)),
                     contentAlignment = Alignment.Center
                 ) {
                     Icon(
                         imageVector = Icons.Outlined.Book,
                         contentDescription = "No Cover Available",
-                        modifier = Modifier.size(24.dp),    // صغّرنا الأيقونة شوي لتناسب حجم الـ Box الصغير
+                        modifier = Modifier.size(24.dp),
                         tint = Color(0xFF8A8D91)
                     )
                 }
@@ -447,9 +451,9 @@ fun BottomNavigationBar(navController: androidx.navigation.NavController) {
         modifier = Modifier.shadow(elevation = 8.dp)
     ) {
         NavigationBarItem(
-            selected = true, // شاشة البحث هي النشطة حالياً
+            selected = true,
             onClick = {
-                // إذا ضغط ع السيرش وهو جواه ما يعمل شي
+
             },
             icon = { Icon(Icons.Default.Search, contentDescription = null, tint = ModernPurple) },
             label = { Text("Search", color = ModernPurple, fontWeight = FontWeight.Bold) }
@@ -457,7 +461,7 @@ fun BottomNavigationBar(navController: androidx.navigation.NavController) {
         NavigationBarItem(
             selected = false,
             onClick = {
-                // الانتقال السحري لشاشة المفضلة (حسب اسم الـ Route عندك بالـ NavHost)
+
                 navController.navigate("favorites_screen")
             },
             icon = { Icon(Icons.Default.Favorite, contentDescription = null) },
@@ -465,7 +469,7 @@ fun BottomNavigationBar(navController: androidx.navigation.NavController) {
         )
         NavigationBarItem(
             selected = false,
-            onClick = { /* التنقل للأكاونت لاحقاً */ },
+            onClick = {  },
             icon = { Icon(Icons.Default.Person, contentDescription = null) },
             label = { Text("Account") }
         )

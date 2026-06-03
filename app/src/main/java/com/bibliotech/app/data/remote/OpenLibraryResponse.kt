@@ -8,5 +8,5 @@ data class BookDoc(
     val key: String,
     val title: String,
     val author_name: List<String>?,
-    val cover_i: Int?
+    val cover_i: Int?,
 )

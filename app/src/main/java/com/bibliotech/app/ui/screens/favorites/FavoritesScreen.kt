@@ -105,7 +105,12 @@ fun FavoritesScreen(
             book = selectedBook,
             description = viewModel.sheetDescriptionState,
             numberOfPages = viewModel.sheetNumberOfPagesState,
-            onDismiss = { viewModel.closeBookDetailsSheet() } // إغلاق الـ Sheet عند السحب لأسفل
+            onDismiss = { viewModel.closeBookDetailsSheet() } ,// إغلاق الـ Sheet عند السحب لأسفل
+            onDownloadClick = { book -> viewModel.downloadBook(book) },
+            onBrowseClick = { bookKey ->
+                // 👈 هنا بنادي الـ navController بكل راحة لأن الشاشة الكبيرة بتشوفه
+                navController.navigate("book_reader?bookKey=$bookKey")
+            }
         )
     }
 }

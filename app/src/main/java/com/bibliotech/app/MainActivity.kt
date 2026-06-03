@@ -19,22 +19,21 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        // 1. إنشاء الـ API Service (شغال تمام عندك)
+
         val apiService = RetrofitInstance.api
 
-        // 2. بناء قاعدة البيانات وجلب الـ Dao (هاد السطرين الجداد)
+
         val database = AppDatabase.getDatabase(this)
         val bookDao = database.bookDao()
 
-        // 3. إنشاء الـ Repository وتمرير الـ bookDao له بدل الـ context
+
         val repository = BookRepository(apiService, bookDao)
 
-        // 4. إنشاء الـ ViewModel وتمرير الـ Repository له (إذا لسا بتستخدمه هون)
-        val searchViewModel = SearchViewModel(repository)
 
+        val searchViewModel = SearchViewModel(application, repository)
         setContent {
             BibliotechTheme {
-                // تمرير الـ repository المحدث تلقائياً جوات الـ AppNavigation
+
                 AppNavigation(repository = repository)
             }
         }

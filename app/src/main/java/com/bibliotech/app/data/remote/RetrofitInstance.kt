@@ -8,16 +8,16 @@ import java.util.concurrent.TimeUnit
 object RetrofitInstance {
     private const val BASE_URL = "https://openlibrary.org/"
 
-    // إضافة OkHttpClient لزيادة وقت الاستجابة
+
     private val client = OkHttpClient.Builder()
-        .connectTimeout(30, TimeUnit.SECONDS) // زيادة وقت الاتصال
-        .readTimeout(30, TimeUnit.SECONDS)    // زيادة وقت انتظار الداتا
+        .connectTimeout(30, TimeUnit.SECONDS)
+        .readTimeout(30, TimeUnit.SECONDS)
         .build()
 
     val api: OpenLibraryApiService by lazy {
         Retrofit.Builder()
             .baseUrl(BASE_URL)
-            .client(client) // ربط الـ client بالـ Retrofit
+            .client(client)
             .addConverterFactory(GsonConverterFactory.create())
             .build()
             .create(OpenLibraryApiService::class.java)
