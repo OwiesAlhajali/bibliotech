@@ -65,9 +65,7 @@ dependencies {
     implementation(libs.firebase.auth)
     testImplementation(libs.junit)
     // keep explicit versions if needed, but prefer managed versions from libs
-    implementation("com.squareup.retrofit2:retrofit:2.11.0")
-    implementation("com.squareup.retrofit2:converter-gson:2.11.0")
-    implementation("io.coil-kt:coil-compose:2.4.0")
+    // Use versions managed by the version catalog (libs)
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.room:room-runtime:2.6.1")
     implementation("androidx.room:room-ktx:2.6.1")

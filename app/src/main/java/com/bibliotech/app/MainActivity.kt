@@ -9,8 +9,6 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import com.bibliotech.app.data.remote.RetrofitInstance
 import com.bibliotech.app.data.repository.BookRepository
-import com.bibliotech.app.ui.screens.search.SearchScreen
-import com.bibliotech.app.ui.screens.search.SearchViewModel
 import com.bibliotech.app.ui.navigation.BibliotechAppNavHost
 import com.bibliotech.app.ui.theme.BibliotechTheme
 import androidx.compose.foundation.layout.padding
@@ -29,8 +27,6 @@ class MainActivity : ComponentActivity() {
         val database = AppDatabase.getDatabase(this)
         val bookDao = database.bookDao()
         val repository = BookRepository(apiService, bookDao)
-
-        val searchViewModel = SearchViewModel(application, repository)
 
         setContent {
             BibliotechTheme {

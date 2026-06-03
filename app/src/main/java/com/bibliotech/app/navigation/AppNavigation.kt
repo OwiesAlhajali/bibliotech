@@ -14,10 +14,19 @@ import com.bibliotech.app.ui.screens.favorites.FavoritesScreen
 import com.bibliotech.app.ui.screens.favorites.FavoritesViewModel
 import com.bibliotech.app.ui.screens.search.SearchScreen
 import com.bibliotech.app.ui.screens.search.SearchViewModel
+import com.bibliotech.app.ui.auth.AuthChoiceScreen
+import com.bibliotech.app.ui.auth.LoginScreen
+import com.bibliotech.app.ui.auth.SignUpScreen
+import com.bibliotech.app.ui.splash.BibliotechSplashRoute
+import com.google.firebase.auth.FirebaseAuth
 
 object Screen {
     const val Search = "search_screen"
     const val Favorites = "favorites_screen"
+    const val Splash = "splash"
+    const val AuthChoice = "auth_choice"
+    const val Login = "login"
+    const val SignUp = "signup"
 }
 
 @Composable
@@ -32,9 +41,61 @@ fun AppNavigation(
 
     NavHost(
         navController = navController,
-        startDestination = Screen.Search,
+        startDestination = Screen.Splash,
         modifier = modifier
     ) {
+
+        composable(Screen.Splash) {
+            BibliotechSplashRoute { 
+                // After splash, go to auth if not signed in, otherwise go to search
+                val currentUser = FirebaseAuth.getInstance().currentUser
+                if (currentUser != null) {
+                    navController.navigate(Screen.Search) {
+                        popUpTo(Screen.Splash) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(Screen.AuthChoice) {
+                        popUpTo(Screen.Splash) { inclusive = true }
+                    }
+                }
+            }
+        }
+
+        composable(Screen.AuthChoice) {
+            AuthChoiceScreen(
+                onLoginClick = { navController.navigate(Screen.Login) },
+                onSignUpClick = { navController.navigate(Screen.SignUp) },
+                onGuestClick = {
+                    navController.navigate(Screen.Search) {
+                        popUpTo(Screen.AuthChoice) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.Login) {
+            LoginScreen(
+                onBackClick = { navController.popBackStack() },
+                onCreateAccountClick = { navController.navigate(Screen.SignUp) },
+                onSuccess = {
+                    navController.navigate(Screen.Search) {
+                        popUpTo(Screen.Login) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(Screen.SignUp) {
+            SignUpScreen(
+                onBackClick = { navController.popBackStack() },
+                onLoginClick = { navController.navigate(Screen.Login) },
+                onSuccess = {
+                    navController.navigate(Screen.Search) {
+                        popUpTo(Screen.SignUp) { inclusive = true }
+                    }
+                }
+            )
+        }
 
         composable(Screen.Search) {
             val searchViewModel: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
