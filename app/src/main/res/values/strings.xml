@@ -1,5 +1,6 @@
 <resources>
     <string name="app_name">Bibliotech</string>
+    <!-- Strings from both branches merged -->
     <string name="splash_title">BIBLIOTECH</string>
     <string name="splash_tagline">Discover books instantly.</string>
     <string name="splash_loading">Loading the library experience</string>
@@ -28,4 +29,16 @@
     <string name="password_strength_weak">Weak password</string>
     <string name="password_strength_medium">Medium strength</string>
     <string name="password_strength_strong">Strong password</string>
+    <string name="search_hint">Search by book title or author...</string>
+    <string name="no_results">No books found.</string>
+    <string name="error_loading">An error occurred, please check your connection.</string>
+    <string name="loading">Loading books...</string>
+    <string name="cover_description">Book cover for %1$s</string>
+    <string name="no_cover_description">No cover available</string>
+    <string name="download_started">Starting book download…</string>
+    <string name="download_notification_title">Downloading: %1$s</string>
+    <string name="download_notification_description">Downloading book file to BiblioTech folder</string>
+    <string name="download_success">Book downloaded successfully!</string>
+    <string name="download_failed">Download failed. Please check your internet connection.</string>
+    <string name="storage_low_error">Insufficient storage space to download this book.</string>
 </resources>

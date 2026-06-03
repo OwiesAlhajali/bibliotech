@@ -22,9 +22,10 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = Navy,
-    secondary = Gold,
-    tertiary = SoftGray,
+    // Merge light theme values: prefer the more descriptive purple palette where appropriate
+    primary = Purple40,
+    secondary = PurpleGrey40,
+    tertiary = Pink40,
     background = BackgroundLight,
     surface = Color.White,
     onPrimary = White,
@@ -37,6 +38,7 @@ private val LightColorScheme = lightColorScheme(
 @Composable
 fun BibliotechTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    dynamicColor: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
