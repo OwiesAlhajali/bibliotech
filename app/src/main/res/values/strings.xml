@@ -1,3 +1,31 @@
 <resources>
     <string name="app_name">Bibliotech</string>
+    <string name="splash_title">BIBLIOTECH</string>
+    <string name="splash_tagline">Discover books instantly.</string>
+    <string name="splash_loading">Loading the library experience</string>
+    <string name="auth_login">Login</string>
+    <string name="auth_signup">Sign Up</string>
+    <string name="auth_continue">Continue</string>
+    <string name="auth_loading">Please wait…</string>
+    <string name="auth_back">Back</string>
+    <string name="auth_email">Email</string>
+    <string name="auth_password">Password</string>
+    <string name="auth_full_name">Full Name</string>
+    <string name="auth_confirm_password">Confirm Password</string>
+    <string name="auth_forgot_password">Forgot password?</string>
+    <string name="auth_or_continue_with">or continue with</string>
+    <string name="auth_google">Google</string>
+    <string name="auth_apple">Apple</string>
+    <string name="auth_guest">Continue as guest</string>
+    <string name="auth_create_account">Create new account</string>
+    <string name="auth_welcome_title">Welcome to Bibliotech</string>
+    <string name="auth_welcome_subtitle">Choose how you want to continue</string>
+    <string name="auth_login_subtitle">Login to continue your reading journey</string>
+    <string name="auth_signup_subtitle">Create your account in a few steps</string>
+    <string name="home_title">Bibliotech Home</string>
+    <string name="home_subtitle">Your personalized book space is ready.</string>
+    <string name="auth_logout">Logout</string>
+    <string name="password_strength_weak">Weak password</string>
+    <string name="password_strength_medium">Medium strength</string>
+    <string name="password_strength_strong">Strong password</string>
 </resources>
